@@ -1,0 +1,41 @@
+version : '3'
+services:
+  openresty:
+    image: api-gateway:latest
+    build:
+      context: "./"
+      dockerfile: "dockerfile"
+    ports:
+      - "80:80"
+    networks:
+      extnetwork:
+        ipv4_address: 172.22.0.3
+    depends_on:
+      - db
+    restart: always
+  db:
+    image: mysql:5.7.25
+    restart: always
+    networks:
+        extnetwork:
+          ipv4_address: 172.22.0.2
+    command: [
+      "--innodb_use_native_aio=0",
+      "--explicit_defaults_for_timestamp=1",
+      "--default-time-zone=+8:00",
+      "--character-set-server=utf8mb4",
+      "--collation-server=utf8mb4_unicode_ci"
+      ]
+    volumes:
+      - "../db/api-gateway:/var/lib/mysql"
+      - "./deploy/mysql:/docker-entrypoint-initdb.d"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: apigateway
+      MYSQL_USER: apigateway
+      MYSQL_PASSWORD: apigateway
+networks:
+  extnetwork:
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
