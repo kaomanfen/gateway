@@ -1,24 +1,90 @@
-version : '3'
+version : '3.3'
 services:
-  openresty:
-    image: api-gateway:latest
-    build:
-      context: "./"
-      dockerfile: "dockerfile"
-    ports:
-      - "80:80"
-    networks:
-      extnetwork:
-        ipv4_address: 172.22.0.3
+  # openresty:
+  #   image: api-gateway:latest
+  #   build:
+  #     context: "./"
+  #     dockerfile: "dockerfile"
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - db
+  #   restart: always
+  # 管理后台Api
+  gateway-admin:
+    image: kaomanfen/gateway-admin:0.0.1
+    restart: always
+    environment: 
+      GATEWAY_IP_TEST: test-api
+      GATEWAY_IP_BETA: beta-api
+      GATEWAY_IP_PROD: prod-api
+      KVSTORE_API: test-api
+      BETA_KVSTORE_API: beta-api
+      TEST_KVSTORE_API: prod-api
+      APP_KEY: base64:tPJcnqGHGox3P3eT4BJc84mIppZNEwpkv/fe7nJIoLE=
+      JWT_SECRET: eVCDpAerMa2t97O97umo4rMqpHU9EqqpDp2kETjHxr5AXokozEwlxgW5uYMKS768
     depends_on:
       - db
+  # 管理后台页面
+  gateway-dashboard:
+    image: kaomanfen/gateway-dashboard:0.0.1
     restart: always
+    ports:
+      - "10080:80"
+    depends_on:
+      - gateway-admin
+  #测试环境API 
+  test-api:
+    image: kaomanfen/gateway:0.0.1
+    restart: always
+    environment: 
+      ENV: test
+      DB_HOST: db 
+      DB_PORT: 3306
+      DB_USER: apigateway
+      DB_PASSWORD: apigateway
+      DB_NAME: apigateway
+    ports:
+      - "10081:80"
+    depends_on:
+      - db
+
+  #Beta环境API 
+  beta-api:
+    image: kaomanfen/gateway:0.0.1
+    restart: always
+    environment: 
+      ENV: beta
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: apigateway
+      DB_PASSWORD: apigateway
+      DB_NAME: apigateway
+    ports:
+      - "10082:80"
+    depends_on:
+      - db
+
+  #生产环境API 
+  prod-api:
+    image: kaomanfen/gateway:0.0.1
+    restart: always
+    environment: 
+      ENV: prod
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: apigateway
+      DB_PASSWORD: apigateway
+      DB_NAME: apigateway
+    ports:
+      - "10083:80"
+    depends_on:
+      - db
+
+
   db:
     image: mysql:5.7.25
     restart: always
-    networks:
-        extnetwork:
-          ipv4_address: 172.22.0.2
     command: [
       "--innodb_use_native_aio=0",
       "--explicit_defaults_for_timestamp=1",
@@ -34,8 +100,3 @@ services:
       MYSQL_DATABASE: apigateway
       MYSQL_USER: apigateway
       MYSQL_PASSWORD: apigateway
-networks:
-  extnetwork:
-    ipam:
-      config:
-        - subnet: 172.22.0.0/16
