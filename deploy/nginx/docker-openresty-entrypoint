@@ -1,0 +1,13 @@
+#!/bin/sh
+
+echo "start...";
+
+# dns
+echo resolver $(awk 'BEGIN{ORS=" "} $1=="nameserver" {print $2}' /etc/resolv.conf) ";" > /etc/nginx/resolvers.conf
+
+
+
+#  check下是否正常
+nginx -t
+
+exec "$@"
